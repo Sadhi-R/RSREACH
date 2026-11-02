@@ -1,0 +1,138 @@
+name: rsreach-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${RSREACH_DB_NAME:-rsreach}
+      POSTGRES_USER: ${RSREACH_DB_USER:-rsreach}
+      POSTGRES_PASSWORD: ${RSREACH_DB_PASSWORD:?RSREACH_DB_PASSWORD is required}
+    ports:
+      - "${RSREACH_DB_PORT:-5432}:5432"
+    volumes:
+      - rsreach_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${RSREACH_DB_USER:-rsreach} -d ${RSREACH_DB_NAME:-rsreach}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rsreach
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      RSREACH_DB_URL: jdbc:postgresql://postgres:5432/${RSREACH_DB_NAME:-rsreach}
+      RSREACH_DB_USER: ${RSREACH_DB_USER:-rsreach}
+      RSREACH_DB_PASSWORD: ${RSREACH_DB_PASSWORD}
+      RSREACH_DB_POOL_SIZE: ${RSREACH_API_DB_POOL_SIZE:-10}
+      RSREACH_DB_POOL_MIN_IDLE: ${RSREACH_API_DB_POOL_MIN_IDLE:-2}
+      RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API: "false"
+      RSREACH_SECURITY_EXPOSE_DEV_TOKENS: "false"
+      RSREACH_JWT_CUSTOMER_SECRET: ${RSREACH_JWT_CUSTOMER_SECRET}
+      RSREACH_JWT_STAFF_SECRET: ${RSREACH_JWT_STAFF_SECRET}
+      RSREACH_BOOTSTRAP_STAFF_EMAIL: ${RSREACH_BOOTSTRAP_STAFF_EMAIL:-}
+      RSREACH_BOOTSTRAP_STAFF_PASSWORD: ${RSREACH_BOOTSTRAP_STAFF_PASSWORD:-}
+      RSREACH_SECRETS_KEY_ALIAS: ${RSREACH_SECRETS_KEY_ALIAS:-rsreach-master}
+      RSREACH_SECRETS_KEY_VERSION: ${RSREACH_SECRETS_KEY_VERSION:-1}
+      RSREACH_SECRETS_MASTER_KEY: ${RSREACH_SECRETS_MASTER_KEY:-}
+    ports:
+      - "${RSREACH_API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - rsreach
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.worker
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      RSREACH_DB_URL: jdbc:postgresql://postgres:5432/${RSREACH_DB_NAME:-rsreach}
+      RSREACH_DB_USER: ${RSREACH_DB_USER:-rsreach}
+      RSREACH_DB_PASSWORD: ${RSREACH_DB_PASSWORD}
+      RSREACH_DB_POOL_SIZE: ${RSREACH_WORKER_DB_POOL_SIZE:-8}
+      RSREACH_WORKER_CONCURRENCY: ${RSREACH_WORKER_CONCURRENCY:-4}
+      RSREACH_WORKER_CLAIM_BATCH_SIZE: ${RSREACH_WORKER_CLAIM_BATCH_SIZE:-20}
+      RSREACH_WORKER_POLL_INTERVAL_MS: ${RSREACH_WORKER_POLL_INTERVAL_MS:-1000}
+      RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API: "false"
+      RSREACH_SECRETS_KEY_ALIAS: ${RSREACH_SECRETS_KEY_ALIAS:-rsreach-master}
+      RSREACH_SECRETS_KEY_VERSION: ${RSREACH_SECRETS_KEY_VERSION:-1}
+      RSREACH_SECRETS_MASTER_KEY: ${RSREACH_SECRETS_MASTER_KEY:-}
+    ports:
+      - "${RSREACH_WORKER_PORT:-8081}:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - rsreach
+
+  scheduler:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.scheduler
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      RSREACH_DB_URL: jdbc:postgresql://postgres:5432/${RSREACH_DB_NAME:-rsreach}
+      RSREACH_DB_USER: ${RSREACH_DB_USER:-rsreach}
+      RSREACH_DB_PASSWORD: ${RSREACH_DB_PASSWORD}
+      RSREACH_DB_POOL_SIZE: ${RSREACH_SCHEDULER_DB_POOL_SIZE:-5}
+      RSREACH_SCHEDULER_TICK_INTERVAL_MS: ${RSREACH_SCHEDULER_TICK_INTERVAL_MS:-5000}
+      RSREACH_SCHEDULER_BATCH_SIZE: ${RSREACH_SCHEDULER_BATCH_SIZE:-100}
+      RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API: "false"
+      RSREACH_SECRETS_KEY_ALIAS: ${RSREACH_SECRETS_KEY_ALIAS:-rsreach-master}
+      RSREACH_SECRETS_KEY_VERSION: ${RSREACH_SECRETS_KEY_VERSION:-1}
+      RSREACH_SECRETS_MASTER_KEY: ${RSREACH_SECRETS_MASTER_KEY:-}
+    ports:
+      - "${RSREACH_SCHEDULER_PORT:-8082}:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - rsreach
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+    ports:
+      - "${RSREACH_WEB_PORT:-8088}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - rsreach
+
+volumes:
+  rsreach_pg_data:
+
+networks:
+  rsreach:
+    driver: bridge

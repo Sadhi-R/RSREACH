@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: rsreach-api
+  profiles:
+    default: local
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: ${RSREACH_DB_URL:jdbc:postgresql://localhost:5432/rsreach}
+    username: ${RSREACH_DB_USER:rsreach}
+    password: ${RSREACH_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${RSREACH_DB_POOL_SIZE:10}
+      minimum-idle: ${RSREACH_DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${RSREACH_DB_CONNECTION_TIMEOUT_MS:30000}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: ${RSREACH_API_PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  info:
+    env:
+      enabled: false
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    com.rsreach: INFO
+
+rsreach:
+  app:
+    role: api
+  security:
+    # Default deny. Local profile may open OpenAPI only; auth endpoints remain explicitly public.
+    permit-unauthenticated-api: ${RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API:false}
+    # Disabled by default. Only honored under local profile and never under docker (see DevTokenExposureGate).
+    expose-dev-tokens: ${RSREACH_SECURITY_EXPOSE_DEV_TOKENS:false}
+  jwt:
+    customer:
+      secret: ${RSREACH_JWT_CUSTOMER_SECRET:}
+      issuer: ${RSREACH_JWT_CUSTOMER_ISSUER:rsreach-customer}
+      audience: ${RSREACH_JWT_CUSTOMER_AUDIENCE:rsreach-app}
+      access-token-ttl-seconds: ${RSREACH_JWT_CUSTOMER_ACCESS_TTL:900}
+      refresh-token-ttl-seconds: ${RSREACH_JWT_CUSTOMER_REFRESH_TTL:2592000}
+    staff:
+      secret: ${RSREACH_JWT_STAFF_SECRET:}
+      issuer: ${RSREACH_JWT_STAFF_ISSUER:rsreach-staff}
+      audience: ${RSREACH_JWT_STAFF_AUDIENCE:rsreach-platform}
+      access-token-ttl-seconds: ${RSREACH_JWT_STAFF_ACCESS_TTL:900}
+      refresh-token-ttl-seconds: ${RSREACH_JWT_STAFF_REFRESH_TTL:2592000}
+  bootstrap:
+    staff-email: ${RSREACH_BOOTSTRAP_STAFF_EMAIL:}
+    staff-password: ${RSREACH_BOOTSTRAP_STAFF_PASSWORD:}
+  worker:
+    concurrency: ${RSREACH_WORKER_CONCURRENCY:4}
+  secrets:
+    active-key-alias: ${RSREACH_SECRETS_KEY_ALIAS:rsreach-master}
+    active-key-version: ${RSREACH_SECRETS_KEY_VERSION:1}

@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1.6
+FROM maven:3.9.9-eclipse-temurin-17 AS build
+WORKDIR /workspace/backend
+COPY backend/ ./
+RUN mvn -pl rsreach-scheduler -am -DskipTests package
+
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --uid 10001 rsreach
+COPY --from=build /workspace/backend/rsreach-scheduler/target/rsreach-scheduler-*.jar /app/app.jar
+USER rsreach
+EXPOSE 8082
+ENTRYPOINT ["java","-XX:+UseContainerSupport","-XX:MaxRAMPercentage=75.0","-jar","/app/app.jar"]

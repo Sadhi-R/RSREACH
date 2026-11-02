@@ -1,0 +1,63 @@
+# Build
+**/target/
+**/build/
+**/dist/
+**/node_modules/
+**/.vite/
+*.class
+*.jar
+!**/maven-wrapper.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+*.pem
+*.key
+secrets/
+**/application-local.yml
+**/application-secret.yml
+
+# Logs
+logs/
+*.log
+
+# Coverage / reports
+**/coverage/
+**/jacoco/
+**/surefire-reports/
+**/failsafe-reports/
+
+# Frontend
+frontend/**/dist/
+frontend/**/.turbo/
+*.tsbuildinfo
+
+# Docker volumes / local data
+.data/
+docker-data/
+
+# Cursor / agent
+.cursor/
+chatgptchatreference.txt

@@ -1,0 +1,15 @@
+rsreach:
+  security:
+    permit-unauthenticated-api: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  info:
+    env:
+      enabled: false

@@ -1,0 +1,27 @@
+rsreach:
+  security:
+    permit-unauthenticated-api: false
+    # Hard-disabled in Docker; DevTokenExposureGate also refuses docker profile.
+    expose-dev-tokens: false
+  jwt:
+    customer:
+      secret: ${RSREACH_JWT_CUSTOMER_SECRET}
+    staff:
+      secret: ${RSREACH_JWT_STAFF_SECRET}
+  bootstrap:
+    staff-email: ${RSREACH_BOOTSTRAP_STAFF_EMAIL:}
+    staff-password: ${RSREACH_BOOTSTRAP_STAFF_PASSWORD:}
+  secrets:
+    master-key: ${RSREACH_SECRETS_MASTER_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  info:
+    env:
+      enabled: false

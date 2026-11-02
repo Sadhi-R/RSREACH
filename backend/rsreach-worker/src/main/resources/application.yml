@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: rsreach-worker
+  profiles:
+    default: local
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  main:
+    web-application-type: servlet
+  datasource:
+    url: ${RSREACH_DB_URL:jdbc:postgresql://localhost:5432/rsreach}
+    username: ${RSREACH_DB_USER:rsreach}
+    password: ${RSREACH_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${RSREACH_DB_POOL_SIZE:8}
+      minimum-idle: ${RSREACH_DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${RSREACH_DB_CONNECTION_TIMEOUT_MS:30000}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: false
+
+server:
+  port: ${RSREACH_WORKER_PORT:8081}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  info:
+    env:
+      enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.rsreach: INFO
+
+rsreach:
+  app:
+    role: worker
+  security:
+    permit-unauthenticated-api: ${RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API:false}
+  worker:
+    concurrency: ${RSREACH_WORKER_CONCURRENCY:4}
+    claim-batch-size: ${RSREACH_WORKER_CLAIM_BATCH_SIZE:20}
+    poll-interval-ms: ${RSREACH_WORKER_POLL_INTERVAL_MS:1000}
+  secrets:
+    active-key-alias: ${RSREACH_SECRETS_KEY_ALIAS:rsreach-master}
+    active-key-version: ${RSREACH_SECRETS_KEY_VERSION:1}
