@@ -132,6 +132,39 @@ public class OutboxRepository {
         );
     }
 
+    public java.util.Optional<OutboxEvent> findById(UUID id) {
+        java.util.List<OutboxEvent> rows = jdbcTemplate.query(
+                """
+                SELECT id, aggregate_type, aggregate_id, event_type, payload_json::text,
+                       tenant_id, workspace_id, correlation_id, idempotency_key,
+                       status, attempt_count, max_attempts, available_at, processed_at, last_error
+                FROM outbox_events
+                WHERE id = ?
+                """,
+                (rs, i) -> new OutboxEvent(
+                        (UUID) rs.getObject("id"),
+                        rs.getString("aggregate_type"),
+                        (UUID) rs.getObject("aggregate_id"),
+                        rs.getString("event_type"),
+                        rs.getString("payload_json"),
+                        (UUID) rs.getObject("tenant_id"),
+                        (UUID) rs.getObject("workspace_id"),
+                        rs.getString("correlation_id"),
+                        rs.getString("idempotency_key"),
+                        rs.getString("status"),
+                        rs.getInt("attempt_count"),
+                        rs.getInt("max_attempts"),
+                        rs.getTimestamp("available_at").toInstant(),
+                        rs.getTimestamp("processed_at") == null
+                                ? null
+                                : rs.getTimestamp("processed_at").toInstant(),
+                        rs.getString("last_error")
+                ),
+                id
+        );
+        return rows.stream().findFirst();
+    }
+
     public long countByStatus(String status) {
         Long count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM outbox_events WHERE status = ?",

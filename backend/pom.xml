@@ -26,6 +26,13 @@
         <module>rsreach-identity-customer</module>
         <module>rsreach-identity-staff</module>
         <module>rsreach-tenancy</module>
+        <module>rsreach-contacts</module>
+        <module>rsreach-communications</module>
+        <module>rsreach-whatsapp</module>
+        <module>rsreach-email</module>
+        <module>rsreach-campaigns</module>
+        <module>rsreach-billing</module>
+        <module>rsreach-automation</module>
         <module>rsreach-staff-access</module>
         <module>rsreach-admin</module>
         <module>rsreach-api</module>
@@ -78,6 +85,41 @@
             <dependency>
                 <groupId>com.rsreach</groupId>
                 <artifactId>rsreach-tenancy</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rsreach</groupId>
+                <artifactId>rsreach-contacts</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rsreach</groupId>
+                <artifactId>rsreach-communications</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rsreach</groupId>
+                <artifactId>rsreach-whatsapp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rsreach</groupId>
+                <artifactId>rsreach-email</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rsreach</groupId>
+                <artifactId>rsreach-campaigns</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rsreach</groupId>
+                <artifactId>rsreach-billing</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rsreach</groupId>
+                <artifactId>rsreach-automation</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

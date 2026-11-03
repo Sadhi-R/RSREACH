@@ -1,4 +1,6 @@
 rsreach:
+  webhooks:
+    allow-mock-signatures: ${RSREACH_WEBHOOKS_ALLOW_MOCK_SIGNATURES:false}
   security:
     permit-unauthenticated-api: false
     # Hard-disabled in Docker; DevTokenExposureGate also refuses docker profile.
@@ -12,7 +14,7 @@ rsreach:
     staff-email: ${RSREACH_BOOTSTRAP_STAFF_EMAIL:}
     staff-password: ${RSREACH_BOOTSTRAP_STAFF_PASSWORD:}
   secrets:
-    master-key: ${RSREACH_SECRETS_MASTER_KEY:}
+    master-key: ${RSREACH_SECRETS_MASTER_KEY}
 
 management:
   endpoints:

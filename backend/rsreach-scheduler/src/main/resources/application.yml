@@ -56,6 +56,13 @@ rsreach:
   scheduler:
     tick-interval-ms: ${RSREACH_SCHEDULER_TICK_INTERVAL_MS:5000}
     batch-size: ${RSREACH_SCHEDULER_BATCH_SIZE:100}
+    billing-renewal-ms: ${RSREACH_SCHEDULER_BILLING_RENEWAL_MS:300000}
+  billing:
+    razorpay:
+      key-id: ${RSREACH_RAZORPAY_KEY_ID:}
+      key-secret: ${RSREACH_RAZORPAY_KEY_SECRET:}
+      webhook-secret: ${RSREACH_RAZORPAY_WEBHOOK_SECRET:}
+      live-enabled: ${RSREACH_RAZORPAY_LIVE_ENABLED:false}
   secrets:
     active-key-alias: ${RSREACH_SECRETS_KEY_ALIAS:rsreach-master}
     active-key-version: ${RSREACH_SECRETS_KEY_VERSION:1}

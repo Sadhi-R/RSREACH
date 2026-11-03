@@ -42,11 +42,39 @@
         </dependency>
         <dependency>
             <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-contacts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-communications</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-whatsapp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-email</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-campaigns</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
             <artifactId>rsreach-staff-access</artifactId>
         </dependency>
         <dependency>
             <groupId>com.rsreach</groupId>
             <artifactId>rsreach-admin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-billing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-automation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

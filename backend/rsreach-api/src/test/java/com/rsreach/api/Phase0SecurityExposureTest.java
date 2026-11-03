@@ -18,7 +18,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest(properties = {
         "spring.profiles.active=docker",
-        "rsreach.security.permit-unauthenticated-api=false"
+        "rsreach.security.permit-unauthenticated-api=false",
+        "rsreach.secrets.master-key=test-master-key-material-p0",
+        "rsreach.jwt.customer.secret=test-customer-jwt-secret-p0",
+        "rsreach.jwt.staff.secret=test-staff-jwt-secret-p0!!!!",
+        "rsreach.billing.razorpay.webhook-secret=test-razorpay-webhook-p0"
 })
 @AutoConfigureMockMvc
 @Testcontainers(disabledWithoutDocker = true)

@@ -21,7 +21,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @AutoConfiguration
 @EnableMethodSecurity
-@EnableConfigurationProperties({RsReachSecurityProperties.class, JwtProperties.class})
+@EnableConfigurationProperties({
+        RsReachSecurityProperties.class,
+        JwtProperties.class,
+        WebhookSecurityProperties.class
+})
 public class SecurityConfig {
 
     @Bean
@@ -58,6 +62,7 @@ public class SecurityConfig {
                             "/actuator/health/**",
                             "/api/v1/system/health"
                     ).permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/v1/webhooks/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST,
                             "/api/v1/app/auth/register",
                             "/api/v1/app/auth/login",
@@ -68,7 +73,8 @@ public class SecurityConfig {
                             "/api/v1/platform/auth/login",
                             "/api/v1/platform/auth/mfa/verify",
                             "/api/v1/platform/auth/refresh",
-                            "/api/v1/platform/auth/logout"
+                            "/api/v1/platform/auth/logout",
+                            "/api/v1/webhooks/**"
                     ).permitAll();
                     if (securityProperties.isPermitUnauthenticatedApi()) {
                         auth.requestMatchers(

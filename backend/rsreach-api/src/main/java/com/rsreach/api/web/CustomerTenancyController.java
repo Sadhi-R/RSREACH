@@ -1,7 +1,11 @@
 package com.rsreach.api.web;
 
+import com.rsreach.billing.BillingModels;
+import com.rsreach.billing.EntitlementService;
 import com.rsreach.common.Permissions;
 import com.rsreach.common.RsReachConstants;
+import com.rsreach.common.error.ApiException;
+import com.rsreach.common.error.ErrorCode;
 import com.rsreach.security.auth.RsReachPrincipal;
 import com.rsreach.security.context.TenantContext;
 import com.rsreach.tenancy.CustomerAuthorizationService;
@@ -26,13 +30,16 @@ public class CustomerTenancyController {
 
     private final TenancyService tenancyService;
     private final CustomerAuthorizationService authorizationService;
+    private final EntitlementService entitlementService;
 
     public CustomerTenancyController(
             TenancyService tenancyService,
-            CustomerAuthorizationService authorizationService
+            CustomerAuthorizationService authorizationService,
+            EntitlementService entitlementService
     ) {
         this.tenancyService = tenancyService;
         this.authorizationService = authorizationService;
+        this.entitlementService = entitlementService;
     }
 
     @PostMapping("/tenants")
@@ -57,7 +64,25 @@ public class CustomerTenancyController {
         // Path tenant id is authoritative; do not rely on principal permission union or forged headers.
         authorizationService.requireTenantPermission(
                 principal.getId(), tenantId, Permissions.TENANT_MEMBERS_MANAGE);
-        return tenancyService.invite(principal.getId(), tenantId, request.email(), request.roleCode());
+        // Keep MEMBERS metering in API layer to avoid tenancy↔billing Maven cycle.
+        BillingModels.CheckResult memberCheck =
+                entitlementService.check(tenantId, BillingModels.METER_MEMBERS, 1L);
+        if (!memberCheck.allowed()) {
+            throw new ApiException(ErrorCode.CONFLICT,
+                    "Entitlement limit exceeded: MEMBERS – " + memberCheck.reason());
+        }
+        Map<String, String> result =
+                tenancyService.invite(principal.getId(), tenantId, request.email(), request.roleCode());
+        String inviteKey = "TENANT_INVITE:" + tenantId + ":"
+                + request.email().trim().toLowerCase() + ":" + System.currentTimeMillis() / 60_000L;
+        entitlementService.consume(
+                tenantId, null,
+                BillingModels.METER_MEMBERS, 1L,
+                inviteKey,
+                "tenant_invitation",
+                tenantId.toString()
+        );
+        return result;
     }
 
     @PostMapping("/invitations/accept")
@@ -84,6 +109,18 @@ public class CustomerTenancyController {
     public List<TenancyService.WorkspaceView> listWorkspaces(@AuthenticationPrincipal RsReachPrincipal principal) {
         UUID tenantId = TenantContext.requireTenantId();
         return tenancyService.listWorkspaces(principal.getId(), tenantId);
+    }
+
+    @GetMapping("/permissions")
+    public Map<String, Object> workspacePermissions(@AuthenticationPrincipal RsReachPrincipal principal) {
+        UUID tenantId = TenantContext.requireTenantId();
+        UUID workspaceId = TenantContext.requireWorkspaceId();
+        return Map.of(
+                "tenantId", tenantId,
+                "workspaceId", workspaceId,
+                "permissions", authorizationService.resolveWorkspacePermissions(
+                        principal.getId(), tenantId, workspaceId)
+        );
     }
 
     @PostMapping("/workspaces/members/role")

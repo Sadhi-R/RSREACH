@@ -2,7 +2,7 @@
 
 Unified Communication & Automation Platform (modular monolith).
 
-**Current phase:** Phase 1 — identity, authentication, multi-tenancy.
+**Current phase:** Phase 5 — commercial launch harden + light UX (see `docs/architecture/phase-5-roadmap-plan.md`). Phases 0–4 are closed.
 
 ## Stack
 
@@ -78,9 +78,13 @@ npm run dev
 
 Vite proxies `/api` to `http://localhost:8080`.
 
+## Local PostgreSQL (without Compose Postgres)
+
+For day-to-day native development against an installed PostgreSQL instance, see [docs/development/local-postgres-setup.md](docs/development/local-postgres-setup.md). Use `.env.local` (from `.env.local.example`). Docker Compose and Testcontainers remain unchanged for integration verification.
+
 ## Configuration
 
-All secrets and tunables come from environment variables. See [.env.example](.env.example).
+All secrets and tunables come from environment variables. See [.env.example](.env.example) (Compose) and [.env.local.example](.env.local.example) (native local).
 
 Important Phase 0 safeguards are documented in [docs/architecture/phase-0-safeguards.md](docs/architecture/phase-0-safeguards.md):
 
@@ -92,7 +96,12 @@ Important Phase 0 safeguards are documented in [docs/architecture/phase-0-safegu
 
 ## Phase boundaries
 
-- **Phase 0 (this commit set):** foundation, health, Flyway baseline, Compose, CI
-- **Phase 1+:** identity, tenancy, RBAC, portals, communications — not started
+- **Phase 0:** foundation, health, Flyway baseline, Compose, CI
+- **Phase 1:** identity, tenancy, RBAC, dual-realm auth
+- **Phase 2:** contacts, groups, consent, duplicates/merge, CSV, shares
+- **Phase 3:** unified inbox, WhatsApp/email mocks, templates, campaigns (V18–V23)
+- **Phase 3.5:** live connector scaffolding, MinIO ADR, prod Compose harden
+- **Phase 4:** billing, entitlements, Razorpay MVP, linear automation (V24–V29) — closed
+- **Phase 5:** commercial launch harden + light UX (in progress); see `docs/architecture/phase-5-roadmap-plan.md`
 
-Do not treat any stub or local helper as a production integration.
+Do not treat mock providers or local helpers as production integrations. Live Meta/Google/Microsoft/delivery/Razorpay calls need operator-supplied credentials.

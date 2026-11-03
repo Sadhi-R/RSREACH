@@ -33,6 +33,7 @@ Desktop.ini
 .env.local
 .env.*.local
 !.env.example
+!.env.local.example
 *.pem
 *.key
 secrets/
@@ -57,6 +58,10 @@ frontend/**/.turbo/
 # Docker volumes / local data
 .data/
 docker-data/
+
+# Local tooling caches
+.tools/
+.tmp/
 
 # Cursor / agent
 .cursor/

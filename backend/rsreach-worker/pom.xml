@@ -28,6 +28,34 @@
             <artifactId>rsreach-security</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-contacts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-communications</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-whatsapp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-email</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-campaigns</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-billing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rsreach</groupId>
+            <artifactId>rsreach-automation</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>

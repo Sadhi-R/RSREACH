@@ -1,0 +1,172 @@
+# Production-oriented Compose: private DB/API/worker/scheduler network; only web (Nginx) published.
+# Copy repo-root .env.example → .env and set strong secrets before use.
+# TLS: terminate at a host Nginx/Caddy in front of published web:8088, or mount certs into an edge proxy.
+name: rsreach-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${RSREACH_DB_NAME:-rsreach}
+      POSTGRES_USER: ${RSREACH_DB_USER:-rsreach}
+      POSTGRES_PASSWORD: ${RSREACH_DB_PASSWORD:?RSREACH_DB_PASSWORD is required}
+    volumes:
+      - rsreach_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${RSREACH_DB_USER:-rsreach} -d ${RSREACH_DB_NAME:-rsreach}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rsreach_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+
+  minio:
+    image: minio/minio:RELEASE.2024-10-02T17-50-41Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${RSREACH_MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${RSREACH_MINIO_ROOT_PASSWORD:?RSREACH_MINIO_ROOT_PASSWORD is required}
+    volumes:
+      - rsreach_minio_data:/data
+    networks:
+      - rsreach_internal
+    restart: unless-stopped
+    profiles: ["media"]
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      RSREACH_APP_ROLE: api
+      RSREACH_DB_URL: jdbc:postgresql://postgres:5432/${RSREACH_DB_NAME:-rsreach}
+      RSREACH_DB_USER: ${RSREACH_DB_USER:-rsreach}
+      RSREACH_DB_PASSWORD: ${RSREACH_DB_PASSWORD}
+      RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API: "false"
+      RSREACH_SECURITY_EXPOSE_DEV_TOKENS: "false"
+      RSREACH_WEBHOOKS_ALLOW_MOCK_SIGNATURES: "false"
+      RSREACH_JWT_CUSTOMER_SECRET: ${RSREACH_JWT_CUSTOMER_SECRET:?required}
+      RSREACH_JWT_STAFF_SECRET: ${RSREACH_JWT_STAFF_SECRET:?required}
+      RSREACH_SECRETS_MASTER_KEY: ${RSREACH_SECRETS_MASTER_KEY:?required}
+      RSREACH_RAZORPAY_WEBHOOK_SECRET: ${RSREACH_RAZORPAY_WEBHOOK_SECRET:?required}
+      RSREACH_SECRETS_KEY_ALIAS: ${RSREACH_SECRETS_KEY_ALIAS:-rsreach-master}
+      RSREACH_SECRETS_KEY_VERSION: ${RSREACH_SECRETS_KEY_VERSION:-1}
+      RSREACH_MEDIA_OBJECT_STORE_ENABLED: ${RSREACH_MEDIA_OBJECT_STORE_ENABLED:-false}
+      RSREACH_MEDIA_MINIO_ENDPOINT: ${RSREACH_MEDIA_MINIO_ENDPOINT:-http://minio:9000}
+      RSREACH_MEDIA_MINIO_BUCKET: ${RSREACH_MEDIA_MINIO_BUCKET:-rsreach-media}
+      RSREACH_MEDIA_MINIO_ACCESS_KEY: ${RSREACH_MEDIA_MINIO_ACCESS_KEY:-}
+      RSREACH_MEDIA_MINIO_SECRET_KEY: ${RSREACH_MEDIA_MINIO_SECRET_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - rsreach_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.worker
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      RSREACH_APP_ROLE: worker
+      RSREACH_DB_URL: jdbc:postgresql://postgres:5432/${RSREACH_DB_NAME:-rsreach}
+      RSREACH_DB_USER: ${RSREACH_DB_USER:-rsreach}
+      RSREACH_DB_PASSWORD: ${RSREACH_DB_PASSWORD}
+      RSREACH_SECRETS_MASTER_KEY: ${RSREACH_SECRETS_MASTER_KEY:?required}
+      RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - rsreach_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+
+  scheduler:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.scheduler
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      RSREACH_APP_ROLE: scheduler
+      RSREACH_DB_URL: jdbc:postgresql://postgres:5432/${RSREACH_DB_NAME:-rsreach}
+      RSREACH_DB_USER: ${RSREACH_DB_USER:-rsreach}
+      RSREACH_DB_PASSWORD: ${RSREACH_DB_PASSWORD}
+      RSREACH_SECRETS_MASTER_KEY: ${RSREACH_SECRETS_MASTER_KEY:?required}
+      RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - rsreach_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+    ports:
+      - "${RSREACH_WEB_PORT:-8088}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - rsreach_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+volumes:
+  rsreach_pg_data:
+  rsreach_minio_data:
+
+networks:
+  rsreach_internal:
+    driver: bridge

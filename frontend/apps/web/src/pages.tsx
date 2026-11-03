@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import {
   apiFetch,
   clearCustomerSession,
@@ -183,15 +183,26 @@ export function CustomerDashboardPage() {
     <main className="shell">
       <p className="eyebrow">Customer portal</p>
       <h1>Welcome, {me || "…"}</h1>
-      <button
-        type="button"
-        onClick={() => {
-          clearCustomerSession();
-          navigate("/app/login");
-        }}
-      >
-        Log out
-      </button>
+
+      {/* Onboarding checklist */}
+      <section className="panel">
+        <h2>Get started</h2>
+        <p className="lede">Complete these steps to get the most out of RSReach.</p>
+        <ul className="plain-list" style={{ marginTop: "0.75rem", lineHeight: "1.9" }}>
+          <li>
+            <Link to="/app/integrations">→ Connect a channel (WhatsApp / Email)</Link>
+          </li>
+          <li>
+            <Link to="/app/billing/plans">→ Activate a billing plan</Link>
+          </li>
+          <li>
+            <Link to="/app/automations/new">→ Create your first automation</Link>
+          </li>
+          <li>
+            <Link to="/app/contacts">→ Import or add contacts</Link>
+          </li>
+        </ul>
+      </section>
 
       <section className="panel">
         <h2>Tenant</h2>
@@ -242,6 +253,42 @@ export function CustomerDashboardPage() {
             </option>
           ))}
         </select>
+      </section>
+
+      <section className="panel">
+        <h2>Communications</h2>
+        <p className="lede">Unified inbox, provider connections, and campaigns.</p>
+        <div className="actions">
+          <Link to="/app/inbox">Inbox</Link>
+          <Link to="/app/integrations">Integrations</Link>
+          <Link to="/app/campaigns">Campaigns</Link>
+        </div>
+      </section>
+      <section className="panel">
+        <h2>Automations</h2>
+        <p className="lede">Trigger-based workflow automation.</p>
+        <div className="actions">
+          <Link to="/app/automations">Workflows</Link>
+        </div>
+      </section>
+      <section className="panel">
+        <h2>Contacts</h2>
+        <p className="lede">Search, create, and manage workspace contacts.</p>
+        <div className="actions">
+          <Link to="/app/contacts">Open directory</Link>
+          <Link to="/app/contact-groups">Contact groups</Link>
+          <Link to="/app/contact-duplicates">Duplicate candidates</Link>
+          <Link to="/app/merges">Merge history</Link>
+        </div>
+      </section>
+      <section className="panel">
+        <h2>Billing</h2>
+        <p className="lede">Subscription, usage, and invoices.</p>
+        <div className="actions">
+          <Link to="/app/billing">Billing overview</Link>
+          <Link to="/app/billing/plans">Plans</Link>
+          <Link to="/app/billing/invoices">Invoices</Link>
+        </div>
       </section>
       {error && <p className="error">{error}</p>}
     </main>
@@ -310,7 +357,7 @@ export function StaffLoginPage() {
         </form>
       ) : (
         <form className="form" onSubmit={onMfa}>
-          {enrollmentSecret && (
+          {enrollmentSecret && import.meta.env.DEV && (
             <p className="lede">Enrollment secret (dev): {enrollmentSecret}</p>
           )}
           <input name="code" placeholder="6-digit MFA code" required />
@@ -371,6 +418,174 @@ export function PlatformDashboardPage() {
           ))}
         </ul>
       </section>
+      <section className="panel">
+        <h2>Billing management</h2>
+        <p className="lede">View tenant subscriptions and record manual payments.</p>
+        <div className="actions">
+          <Link to="/platform/billing">Platform billing</Link>
+        </div>
+      </section>
+      <section className="panel">
+        <h2>Staff access</h2>
+        <p className="lede">Manage break-glass grants for tenant data access.</p>
+        <div className="actions">
+          <Link to="/platform/grants">Grants</Link>
+        </div>
+      </section>
+      <section className="panel">
+        <h2>Audit log</h2>
+        <p className="lede">Review platform-wide action events.</p>
+        <div className="actions">
+          <Link to="/platform/audit">Audit events</Link>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+/* -----------------------------------------------------------------------
+   InviteAcceptPage  /app/invitations/accept?token=
+   ----------------------------------------------------------------------- */
+export function InviteAcceptPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function accept() {
+    const token = searchParams.get("token");
+    if (!token) {
+      setMessage("Missing invitation token in URL.");
+      setStatus("error");
+      return;
+    }
+    setStatus("loading");
+    const res = await apiFetch("customer", "/api/v1/app/invitations/accept", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setMessage((err as { message?: string }).message ?? "Failed to accept invitation.");
+      setStatus("error");
+      return;
+    }
+    setStatus("ok");
+    setTimeout(() => navigate("/app"), 1500);
+  }
+
+  return (
+    <main className="shell">
+      <p className="eyebrow">RSReach</p>
+      <h1>Accept invitation</h1>
+      {status === "idle" && (
+        <div className="actions">
+          <button type="button" onClick={() => void accept()}>
+            Accept &amp; join tenant
+          </button>
+        </div>
+      )}
+      {status === "loading" && <p className="lede">Processing…</p>}
+      {status === "ok" && (
+        <p className="banner-ok">Invitation accepted! Redirecting to dashboard…</p>
+      )}
+      {status === "error" && <p className="error">{message}</p>}
+      <Link to="/app/login">Back to login</Link>
+    </main>
+  );
+}
+
+/* -----------------------------------------------------------------------
+   PasswordResetRequestPage  /app/password-reset
+   ----------------------------------------------------------------------- */
+export function PasswordResetRequestPage() {
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const res = await fetch("/api/v1/app/auth/password-reset/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: data.get("email") }),
+    });
+    if (!res.ok) {
+      setError("Request failed. Check the email address and try again.");
+      return;
+    }
+    setSent(true);
+  }
+
+  return (
+    <main className="shell">
+      <p className="eyebrow">RSReach</p>
+      <h1>Reset password</h1>
+      {sent ? (
+        <p className="banner-ok">
+          If that email is registered, you will receive a reset link shortly.
+        </p>
+      ) : (
+        <form className="form" onSubmit={onSubmit}>
+          <input name="email" type="email" placeholder="Email address" required />
+          <button type="submit">Send reset link</button>
+        </form>
+      )}
+      {error && <p className="error">{error}</p>}
+      <Link to="/app/login">Back to login</Link>
+    </main>
+  );
+}
+
+/* -----------------------------------------------------------------------
+   PasswordResetConfirmPage  /app/password-reset/confirm?token=
+   ----------------------------------------------------------------------- */
+export function PasswordResetConfirmPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const token = searchParams.get("token") ?? (data.get("token") as string);
+    const res = await fetch("/api/v1/app/auth/password-reset/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword: data.get("newPassword") }),
+    });
+    if (!res.ok) {
+      setError("Reset failed. The link may have expired.");
+      return;
+    }
+    setDone(true);
+    setTimeout(() => navigate("/app/login"), 1500);
+  }
+
+  return (
+    <main className="shell">
+      <p className="eyebrow">RSReach</p>
+      <h1>Set new password</h1>
+      {done ? (
+        <p className="banner-ok">Password updated! Redirecting to login…</p>
+      ) : (
+        <form className="form" onSubmit={onSubmit}>
+          {!searchParams.get("token") && (
+            <input name="token" placeholder="Reset token" required />
+          )}
+          <input
+            name="newPassword"
+            type="password"
+            placeholder="New password (min 8 chars)"
+            minLength={8}
+            required
+          />
+          <button type="submit">Update password</button>
+        </form>
+      )}
+      {error && <p className="error">{error}</p>}
+      <Link to="/app/login">Back to login</Link>
     </main>
   );
 }

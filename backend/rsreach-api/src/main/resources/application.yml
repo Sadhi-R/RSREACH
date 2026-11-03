@@ -26,6 +26,10 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
 
 server:
   port: ${RSREACH_API_PORT:8080}
@@ -55,15 +59,42 @@ logging:
   level:
     root: INFO
     com.rsreach: INFO
+  pattern:
+    level: "%5p [correlationId=%X{correlationId}]"
 
 rsreach:
   app:
     role: api
+  webhooks:
+    allow-mock-signatures: ${RSREACH_WEBHOOKS_ALLOW_MOCK_SIGNATURES:true}
+  whatsapp:
+    live-enabled: ${RSREACH_WHATSAPP_LIVE_ENABLED:false}
+    api-base-url: ${RSREACH_WHATSAPP_API_BASE_URL:https://graph.facebook.com/v21.0}
+    app-secret: ${RSREACH_WHATSAPP_APP_SECRET:}
+    verify-token: ${RSREACH_WHATSAPP_VERIFY_TOKEN:}
+  email:
+    delivery-live-enabled: ${RSREACH_EMAIL_DELIVERY_LIVE_ENABLED:false}
+    mailbox-live-enabled: ${RSREACH_MAILBOX_LIVE_ENABLED:false}
+  media:
+    object-store-enabled: ${RSREACH_MEDIA_OBJECT_STORE_ENABLED:false}
+    minio-endpoint: ${RSREACH_MEDIA_MINIO_ENDPOINT:http://minio:9000}
+    minio-bucket: ${RSREACH_MEDIA_MINIO_BUCKET:rsreach-media}
+    minio-access-key: ${RSREACH_MEDIA_MINIO_ACCESS_KEY:}
+    minio-secret-key: ${RSREACH_MEDIA_MINIO_SECRET_KEY:}
+    minio-region: ${RSREACH_MEDIA_MINIO_REGION:us-east-1}
+  billing:
+    razorpay:
+      key-id: ${RSREACH_RAZORPAY_KEY_ID:}
+      key-secret: ${RSREACH_RAZORPAY_KEY_SECRET:}
+      webhook-secret: ${RSREACH_RAZORPAY_WEBHOOK_SECRET:}
+      live-enabled: ${RSREACH_RAZORPAY_LIVE_ENABLED:false}
+      live-orders: ${RSREACH_RAZORPAY_LIVE_ORDERS:${RSREACH_RAZORPAY_LIVE_ENABLED:false}}
   security:
     # Default deny. Local profile may open OpenAPI only; auth endpoints remain explicitly public.
     permit-unauthenticated-api: ${RSREACH_SECURITY_PERMIT_UNAUTHENTICATED_API:false}
     # Disabled by default. Only honored under local profile and never under docker (see DevTokenExposureGate).
     expose-dev-tokens: ${RSREACH_SECURITY_EXPOSE_DEV_TOKENS:false}
+    rate-limit-per-minute: ${RSREACH_SECURITY_RATE_LIMIT_PER_MINUTE:120}
   jwt:
     customer:
       secret: ${RSREACH_JWT_CUSTOMER_SECRET:}

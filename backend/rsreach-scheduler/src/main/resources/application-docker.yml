@@ -1,4 +1,8 @@
 rsreach:
+  webhooks:
+    allow-mock-signatures: false
+  secrets:
+    master-key: ${RSREACH_SECRETS_MASTER_KEY}
   security:
     permit-unauthenticated-api: false
 

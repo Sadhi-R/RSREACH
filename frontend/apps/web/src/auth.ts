@@ -52,7 +52,10 @@ export async function apiFetch(
   init: RequestInit = {}
 ): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
+  if (!isFormData && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
   const token = getAccessToken(realm);
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
